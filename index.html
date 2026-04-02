@@ -3,205 +3,116 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NUX Enterprise System</title>
-  <link rel="manifest" href="manifest.json">
+<title>NUX Work Terminal</title>
 <style>
 :root { --gold: #ffd700; --dark: #121212; --card: #1e1e1e; --text: #e0e0e0; }
-body { background-color: var(--dark); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-.hidden { display: none !important; }
-
-/* Containers */
-.container { background: var(--card); padding: 30px; border-radius: 20px; border: 1px solid var(--gold); box-shadow: 0 15px 35px rgba(0,0,0,0.7); width: 380px; text-align: center; }
+body { background-color: var(--dark); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+.container { background: var(--card); padding: 30px; border-radius: 20px; border: 1px solid var(--gold); box-shadow: 0 15px 35px rgba(0,0,0,0.7); width: 350px; text-align: center; }
 input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; }
-button { width: 100%; padding: 12px; margin-top: 10px; background: var(--gold); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; color: #000; }
-button:hover { opacity: 0.9; transform: scale(1.02); }
-.link { color: var(--gold); cursor: pointer; font-size: 13px; display: block; margin-top: 15px; text-decoration: underline; }
-
-/* Wallet & Stats */
-.nux-logo { width: 70px; height: 70px; background: radial-gradient(circle, var(--gold), #b8860b); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 35px; font-weight: bold; color: #3e2723; box-shadow: 0 0 20px var(--gold); }
-.balance { font-size: 36px; font-weight: bold; color: var(--gold); text-shadow: 0 0 10px rgba(255,215,0,0.3); }
-
-/* Job Board */
-.job-card { background: #2a2a2a; padding: 15px; border-radius: 12px; margin: 10px 0; cursor: pointer; border: 1px solid #444; text-align: right; transition: 0.2s; }
-.job-card:hover { border-color: var(--gold); }
-.job-card.active { border: 2px solid var(--gold); background: rgba(255, 215, 0, 0.05); }
-
-/* Task Manager */
-.task-box { margin-top: 25px; border-top: 1px solid #444; padding-top: 20px; text-align: right; }
-.task-list { list-style: none; padding: 0; max-height: 150px; overflow-y: auto; }
-.task-item { background: #333; padding: 8px; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
-.delete-task { color: #ff4444; cursor: pointer; font-weight: bold; padding: 0 5px; }
-
-.status-tag { font-size: 12px; padding: 4px 8px; border-radius: 4px; background: #00ff41; color: #000; font-weight: bold; }
-.resign-btn { background: #ff4444; color: white; margin-top: 10px; font-size: 12px; padding: 8px; }
+button { width: 100%; padding: 12px; margin-top: 10px; background: var(--gold); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; }
+.hidden { display: none !important; }
+.balance { font-size: 40px; font-weight: bold; color: var(--gold); margin: 15px 0; }
+.task-list { background: #111; padding: 15px; border-radius: 10px; text-align: right; margin-top: 20px; border: 1px dashed var(--gold); }
+.task-item { border-bottom: 1px solid #333; padding: 8px 0; font-size: 14px; display: flex; align-items: center; }
+.task-item::before { content: "●"; color: var(--gold); margin-left: 8px; }
+.logout-link { color: #ff4444; font-size: 12px; cursor: pointer; margin-top: 20px; display: block; }
 </style>
 </head>
 <body>
 
-<!-- Auth Screen -->
 <div id="auth-screen" class="container">
-<div class="nux-logo">N</div>
-<h2 id="auth-title">כניסה ל-NUX</h2>
+<h2>כניסה לעובד NUX</h2>
 <input type="text" id="username" placeholder="שם משתמש">
 <input type="password" id="password" placeholder="סיסמה">
-<button onclick="handleAuth()" id="auth-btn">התחברות</button>
-<span class="link" id="toggle-auth" onclick="toggleAuthMode()">צריך חשבון? הירשם כאן</span>
+<button onclick="auth()">התחבר / הרשם</button>
 </div>
 
-<!-- Main System Screen -->
 <div id="main-screen" class="container hidden">
-<div class="nux-logo">N</div>
-<div id="user-display" style="color: #888; font-size: 14px;"></div>
-<div class="balance" id="balance-display">0</div>
+<div style="color: var(--gold); font-weight: bold;" id="user-tag"></div>
+<div class="balance" id="balance">0</div>
 
-<!-- Job Selection -->
-<div id="job-selection">
-<h4>בחר תפקיד פעיל:</h4>
-<div class="job-card" onclick="setJob('agent', 120, this)">
-<strong>🕵️ סוכן שטח</strong><br><small>שכר: 120 NUX / דקה</small>
-</div>
-<div class="job-card" onclick="setJob('executor', 100, this)">
-<strong>⚖️ מוציא לפועל</strong><br><small>שכר: 100 NUX / דקה</small>
-</div>
-<button id="start-btn" onclick="confirmJob()" disabled>אשר תעסוקה</button>
+<div id="job-select">
+<h4>בחר עבודה להתחלת שכר:</h4>
+<button onclick="startJob('סוכן', 120)" style="background: #333; color: white; margin-bottom: 5px;">סוכן (120/דק')</button>
+<button onclick="startJob('מוציא לפועל', 100)" style="background: #333; color: white;">מוציא לפועל (100/דק')</button>
 </div>
 
-<!-- Work Dashboard -->
-<div id="work-dashboard" class="hidden">
-<div style="margin: 15px 0;">
-<span class="status-tag">סטטוס: בתפקיד</span>
-<p id="job-info" style="margin: 5px 0;"></p>
+<div id="active-work" class="hidden">
+<div style="color: #00ff41;">בתפקיד: <span id="job-title"></span></div>
+<div class="task-list">
+<strong style="font-size: 12px; color: #888;">משימות מהמנהל:</strong>
+<div id="tasks-container">מחכה למשימות...</div>
+</div>
+<button onclick="resign()" style="background: #ff4444; color: white; margin-top: 15px;">התפטרות</button>
 </div>
 
-<!-- Task Board -->
-<div class="task-box">
-<h4 style="margin: 0 0 10px 0;">📋 לוח משימות אישי</h4>
-<div style="display: flex; gap: 5px;">
-<input type="text" id="task-input" placeholder="משימה חדשה..." style="margin: 0; font-size: 13px;">
-<button onclick="addTask()" style="width: 60px; margin: 0;">הוסף</button>
-</div>
-<ul id="task-list" class="task-list"></ul>
-</div>
-
-<button class="resign-btn" onclick="resign()">התפטרות מהתפקיד</button>
-</div>
-
-<span class="link" onclick="logout()" style="color: #ff4444;">התנתק מהמערכת</span>
+<span class="logout-link" onclick="location.reload()">התנתק</span>
 </div>
 
 <script>
-let isLogin = true;
-let currentUser = null;
-let selectedJobData = null;
-let incomeInterval = null;
+let user = null;
+let db = JSON.parse(localStorage.getItem('nux_db')) || {};
 
-function toggleAuthMode() {
-isLogin = !isLogin;
-document.getElementById('auth-title').innerText = isLogin ? "כניסה ל-NUX" : "הרשמה ל-NUX";
-document.getElementById('auth-btn').innerText = isLogin ? "התחברות" : "צור חשבון";
-document.getElementById('toggle-auth').innerText = isLogin ? "צריך חשבון? הירשם כאן" : "כבר רשום? התחבר";
+function auth() {
+const u = document.getElementById('username').value;
+const p = document.getElementById('password').value;
+if(!u || !p) return;
+if(!db[u]) db[u] = { pass: p, balance: 0, job: null };
+if(db[u].pass !== p) return alert("טעות");
+user = u;
+showMain();
 }
 
-function handleAuth() {
-const user = document.getElementById('username').value.trim();
-const pass = document.getElementById('password').value.trim();
-if (!user || !pass) return alert("מלא פרטים");
-
-let users = JSON.parse(localStorage.getItem('nux_db')) || {};
-
-if (isLogin) {
-if (users[user] && users[user].pass === pass) { login(user); }
-else { alert("טעות בשם או בסיסמה"); }
-} else {
-if (users[user]) return alert("שם תפוס");
-users[user] = { pass: pass, balance: 0, job: null, tasks: [] };
-localStorage.setItem('nux_db', JSON.stringify(users));
-alert("נרשמת! עכשיו תתחבר");
-toggleAuthMode();
-}
-}
-
-function login(username) {
-currentUser = username;
+function showMain() {
 document.getElementById('auth-screen').classList.add('hidden');
 document.getElementById('main-screen').classList.remove('hidden');
-document.getElementById('user-display').innerText = `עובד: ${username}`;
-refreshUI();
+document.getElementById('user-tag').innerText = `עובד: ${user}`;
+updateUI();
+setInterval(syncTasks, 3000); // בדיקת משימות חדשות כל 3 שניות
 }
 
-function refreshUI() {
-const data = JSON.parse(localStorage.getItem('nux_db'))[currentUser];
-document.getElementById('balance-display').innerText = Math.floor(data.balance).toLocaleString();
+function startJob(name, pay) {
+db[user].job = { name, pay };
+save();
+updateUI();
+}
 
-if (data.job) {
-document.getElementById('job-selection').classList.add('hidden');
-document.getElementById('work-dashboard').classList.remove('hidden');
-document.getElementById('job-info').innerText = `תפקיד: ${data.job.id === 'agent' ? 'סוכן' : 'מוציא לפועל'}`;
-startIncome(data.job.salary);
-renderTasks(data.tasks);
+function updateUI() {
+const data = db[user];
+document.getElementById('balance').innerText = Math.floor(data.balance).toLocaleString();
+if(data.job) {
+document.getElementById('job-select').classList.add('hidden');
+document.getElementById('active-work').classList.remove('hidden');
+document.getElementById('job-title').innerText = data.job.name;
 } else {
-document.getElementById('job-selection').classList.remove('hidden');
-document.getElementById('work-dashboard').classList.add('hidden');
-if(incomeInterval) clearInterval(incomeInterval);
+document.getElementById('job-select').classList.remove('hidden');
+document.getElementById('active-work').classList.add('hidden');
 }
 }
 
-function setJob(id, salary, el) {
-selectedJobData = { id, salary };
-document.querySelectorAll('.job-card').forEach(c => c.classList.remove('active'));
-el.classList.add('active');
-document.getElementById('start-btn').disabled = false;
+setInterval(() => {
+if(user && db[user].job) {
+db[user].balance += (db[user].job.pay / 60);
+save();
+document.getElementById('balance').innerText = Math.floor(db[user].balance).toLocaleString();
 }
-
-function confirmJob() {
-let users = JSON.parse(localStorage.getItem('nux_db'));
-users[currentUser].job = selectedJobData;
-localStorage.setItem('nux_db', JSON.stringify(users));
-refreshUI();
-}
-
-function startIncome(salary) {
-if(incomeInterval) clearInterval(incomeInterval);
-incomeInterval = setInterval(() => {
-let users = JSON.parse(localStorage.getItem('nux_db'));
-users[currentUser].balance += (salary / 60);
-localStorage.setItem('nux_db', JSON.stringify(users));
-document.getElementById('balance-display').innerText = Math.floor(users[currentUser].balance).toLocaleString();
 }, 1000);
-}
 
-function addTask() {
-const input = document.getElementById('task-input');
-if (!input.value) return;
-let users = JSON.parse(localStorage.getItem('nux_db'));
-users[currentUser].tasks.push(input.value);
-localStorage.setItem('nux_db', JSON.stringify(users));
-input.value = '';
-renderTasks(users[currentUser].tasks);
-}
+function save() { localStorage.setItem('nux_db', JSON.stringify(db)); }
+function resign() { db[user].job = null; save(); updateUI(); }
 
-function renderTasks(tasks) {
-const list = document.getElementById('task-list');
-list.innerHTML = tasks.map((t, i) => `
-<li class="task-item">${t} <span class="delete-task" onclick="removeTask(${i})">✕</span></li>
-`).join('');
+// פונקציית סינכרון משימות "באוויר" (מדמה שרת)
+async function syncTasks() {
+try {
+const res = await fetch('https://firebaseio.com');
+const data = await res.json();
+if(data) {
+let html = '';
+for(let id in data) { html += `<div class="task-item">${data[id].text}</div>`; }
+document.getElementById('tasks-container').innerHTML = html;
 }
-
-function removeTask(index) {
-let users = JSON.parse(localStorage.getItem('nux_db'));
-users[currentUser].tasks.splice(index, 1);
-localStorage.setItem('nux_db', JSON.stringify(users));
-renderTasks(users[currentUser].tasks);
+} catch(e) {}
 }
-
-function resign() {
-let users = JSON.parse(localStorage.getItem('nux_db'));
-users[currentUser].job = null;
-localStorage.setItem('nux_db', JSON.stringify(users));
-refreshUI();
-}
-
-function logout() { location.reload(); }
 </script>
 </body>
 </html>
