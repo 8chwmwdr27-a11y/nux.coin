@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NUX Enterprise System</title>
+<style>
+:root { --gold: #ffd700; --dark: #121212; --card: #1e1e1e; --text: #e0e0e0; }
+body { background-color: var(--dark); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+.hidden { display: none !important; }
+
+/* Containers */
+.container { background: var(--card); padding: 30px; border-radius: 20px; border: 1px solid var(--gold); box-shadow: 0 15px 35px rgba(0,0,0,0.7); width: 380px; text-align: center; }
+input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; }
+button { width: 100%; padding: 12px; margin-top: 10px; background: var(--gold); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; color: #000; }
+button:hover { opacity: 0.9; transform: scale(1.02); }
+.link { color: var(--gold); cursor: pointer; font-size: 13px; display: block; margin-top: 15px; text-decoration: underline; }
+
+/* Wallet & Stats */
+.nux-logo { width: 70px; height: 70px; background: radial-gradient(circle, var(--gold), #b8860b); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 35px; font-weight: bold; color: #3e2723; box-shadow: 0 0 20px var(--gold); }
+.balance { font-size: 36px; font-weight: bold; color: var(--gold); text-shadow: 0 0 10px rgba(255,215,0,0.3); }
+
+/* Job Board */
+.job-card { background: #2a2a2a; padding: 15px; border-radius: 12px; margin: 10px 0; cursor: pointer; border: 1px solid #444; text-align: right; transition: 0.2s; }
+.job-card:hover { border-color: var(--gold); }
+.job-card.active { border: 2px solid var(--gold); background: rgba(255, 215, 0, 0.05); }
+
+/* Task Manager */
+.task-box { margin-top: 25px; border-top: 1px solid #444; padding-top: 20px; text-align: right; }
+.task-list { list-style: none; padding: 0; max-height: 150px; overflow-y: auto; }
+.task-item { background: #333; padding: 8px; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+.delete-task { color: #ff4444; cursor: pointer; font-weight: bold; padding: 0 5px; }
+
+.status-tag { font-size: 12px; padding: 4px 8px; border-radius: 4px; background: #00ff41; color: #000; font-weight: bold; }
+.resign-btn { background: #ff4444; color: white; margin-top: 10px; font-size: 12px; padding: 8px; }
+</style>
+</head>
+<body>
+
+<!-- Auth Screen -->
+<div id="auth-screen" class="container">
+<div class="nux-logo">N</div>
+<h2 id="auth-title">כניסה ל-NUX</h2>
+<input type="text" id="username" placeholder="שם משתמש">
+<input type="password" id="password" placeholder="סיסמה">
+<button onclick="handleAuth()" id="auth-btn">התחברות</button>
+<span class="link" id="toggle-auth" onclick="toggleAuthMode()">צריך חשבון? הירשם כאן</span>
+</div>
+
+<!-- Main System Screen -->
+<div id="main-screen" class="container hidden">
+<div class="nux-logo">N</div>
+<div id="user-display" style="color: #888; font-size: 14px;"></div>
+<div class="balance" id="balance-display">0</div>
+
+<!-- Job Selection -->
+<div id="job-selection">
+<h4>בחר תפקיד פעיל:</h4>
+<div class="job-card" onclick="setJob('agent', 120, this)">
+<strong>🕵️ סוכן שטח</strong><br><small>שכר: 120 NUX / דקה</small>
+</div>
+<div class="job-card" onclick="setJob('executor', 100, this)">
+<strong>⚖️ מוציא לפועל</strong><br><small>שכר: 100 NUX / דקה</small>
+</div>
+<button id="start-btn" onclick="confirmJob()" disabled>אשר תעסוקה</button>
+</div>
+
+<!-- Work Dashboard -->
+<div id="work-dashboard" class="hidden">
+<div style="margin: 15px 0;">
+<span class="status-tag">סטטוס: בתפקיד</span>
+<p id="job-info" style="margin: 5px 0;"></p>
+</div>
+
+<!-- Task Board -->
+<div class="task-box">
+<h4 style="margin: 0 0 10px 0;">📋 לוח משימות אישי</h4>
+<div style="display: flex; gap: 5px;">
+<input type="text" id="task-input" placeholder="משימה חדשה..." style="margin: 0; font-size: 13px;">
+<button onclick="addTask()" style="width: 60px; margin: 0;">הוסף</button>
+</div>
+<ul id="task-list" class="task-list"></ul>
+</div>
+
+<button class="resign-btn" onclick="resign()">התפטרות מהתפקיד</button>
+</div>
+
+<span class="link" onclick="logout()" style="color: #ff4444;">התנתק מהמערכת</span>
+</div>
+
+<script>
+let isLogin = true;
+let currentUser = null;
+let selectedJobData = null;
+let incomeInterval = null;
+
+function toggleAuthMode() {
+isLogin = !isLogin;
+document.getElementById('auth-title').innerText = isLogin ? "כניסה ל-NUX" : "הרשמה ל-NUX";
+document.getElementById('auth-btn').innerText = isLogin ? "התחברות" : "צור חשבון";
+document.getElementById('toggle-auth').innerText = isLogin ? "צריך חשבון? הירשם כאן" : "כבר רשום? התחבר";
+}
+
+function handleAuth() {
+const user = document.getElementById('username').value.trim();
+const pass = document.getElementById('password').value.trim();
+if (!user || !pass) return alert("מלא פרטים");
+
+let users = JSON.parse(localStorage.getItem('nux_db')) || {};
+
+if (isLogin) {
+if (users[user] && users[user].pass === pass) { login(user); }
+else { alert("טעות בשם או בסיסמה"); }
+} else {
+if (users[user]) return alert("שם תפוס");
+users[user] = { pass: pass, balance: 0, job: null, tasks: [] };
+localStorage.setItem('nux_db', JSON.stringify(users));
+alert("נרשמת! עכשיו תתחבר");
+toggleAuthMode();
+}
+}
+
+function login(username) {
+currentUser = username;
+document.getElementById('auth-screen').classList.add('hidden');
+document.getElementById('main-screen').classList.remove('hidden');
+document.getElementById('user-display').innerText = `עובד: ${username}`;
+refreshUI();
+}
+
+function refreshUI() {
+const data = JSON.parse(localStorage.getItem('nux_db'))[currentUser];
+document.getElementById('balance-display').innerText = Math.floor(data.balance).toLocaleString();
+
+if (data.job) {
+document.getElementById('job-selection').classList.add('hidden');
+document.getElementById('work-dashboard').classList.remove('hidden');
+document.getElementById('job-info').innerText = `תפקיד: ${data.job.id === 'agent' ? 'סוכן' : 'מוציא לפועל'}`;
+startIncome(data.job.salary);
+renderTasks(data.tasks);
+} else {
+document.getElementById('job-selection').classList.remove('hidden');
+document.getElementById('work-dashboard').classList.add('hidden');
+if(incomeInterval) clearInterval(incomeInterval);
+}
+}
+
+function setJob(id, salary, el) {
+selectedJobData = { id, salary };
+document.querySelectorAll('.job-card').forEach(c => c.classList.remove('active'));
+el.classList.add('active');
+document.getElementById('start-btn').disabled = false;
+}
+
+function confirmJob() {
+let users = JSON.parse(localStorage.getItem('nux_db'));
+users[currentUser].job = selectedJobData;
+localStorage.setItem('nux_db', JSON.stringify(users));
+refreshUI();
+}
+
+function startIncome(salary) {
+if(incomeInterval) clearInterval(incomeInterval);
+incomeInterval = setInterval(() => {
+let users = JSON.parse(localStorage.getItem('nux_db'));
+users[currentUser].balance += (salary / 60);
+localStorage.setItem('nux_db', JSON.stringify(users));
+document.getElementById('balance-display').innerText = Math.floor(users[currentUser].balance).toLocaleString();
+}, 1000);
+}
+
+function addTask() {
+const input = document.getElementById('task-input');
+if (!input.value) return;
+let users = JSON.parse(localStorage.getItem('nux_db'));
+users[currentUser].tasks.push(input.value);
+localStorage.setItem('nux_db', JSON.stringify(users));
+input.value = '';
+renderTasks(users[currentUser].tasks);
+}
+
+function renderTasks(tasks) {
+const list = document.getElementById('task-list');
+list.innerHTML = tasks.map((t, i) => `
+<li class="task-item">${t} <span class="delete-task" onclick="removeTask(${i})">✕</span></li>
+`).join('');
+}
+
+function removeTask(index) {
+let users = JSON.parse(localStorage.getItem('nux_db'));
+users[currentUser].tasks.splice(index, 1);
+localStorage.setItem('nux_db', JSON.stringify(users));
+renderTasks(users[currentUser].tasks);
+}
+
+function resign() {
+let users = JSON.parse(localStorage.getItem('nux_db'));
+users[currentUser].job = null;
+localStorage.setItem('nux_db', JSON.stringify(users));
+refreshUI();
+}
+
+function logout() { location.reload(); }
+</script>
+</body>
+</html>
+
