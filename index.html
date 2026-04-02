@@ -132,11 +132,47 @@ renderProfile();
 function renderShop(){
 shop.innerHTML=`
 <h3>🛒 חנות</h3>
+async function renderShop(){
+let res = await fetch(API+"shopItems.json");
+let data = await res.json();
+
+shop.innerHTML="<h3>🛒 חנות</h3>";
 
 <button onclick="buySalary()">שדרוג שכר (500)</button>
 <button onclick="buySpeed()">שדרוג מהירות (400)</button>
 <button onclick="buyBot()">קנה בוט (800)</button>
 <button onclick="buyPet()">קנה חיה (600)</button>
+for(let id in data){
+let i=data[id];
+
+shop.innerHTML+=`
+<div>
+${i.name} - ${i.price}
+<button onclick="buyItem('${id}')">קנה</button>
+</div>
+`;
+}
+}
+
+async function buyItem(id){
+let res=await fetch(API+"shopItems/"+id+".json");
+let item=await res.json();
+
+let u=me();
+
+if(u.balance>=item.price){
+u.balance-=item.price;
+
+if(item.type==="salary") u.up.salary*=item.value;
+if(item.type==="speed") u.up.speed*=item.value;
+if(item.type==="bot") u.bots.push(item.value);
+if(item.type==="pet") u.pets.push({lvl:1});
+if(item.type==="cosmetic") alert("קנית פריט קוסמטי");
+
+save();
+renderAll();
+}
+}
 `;
 }
 
