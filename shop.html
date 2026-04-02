@@ -5,69 +5,96 @@
 <title>NUX SHOP</title>
 
 <style>
-body { background:#000; color:#fff; font-family:Arial; text-align:center; }
+body { background:#000; color:#fff; font-family:Arial; text-align:center; margin:0; padding:0; }
+h2 { margin-top:20px; color: gold; text-shadow: 0 0 10px #ffd700; }
+
+#items { display:flex; flex-wrap:wrap; justify-content:center; margin:20px; }
+
 .item {
   border:1px solid #333;
-  padding:10px;
+  padding:15px;
   margin:10px;
-  border-radius:10px;
+  border-radius:15px;
+  width:160px;
+  background:#161616;
+  text-align:center;
+  transition: 0.3s;
 }
-button {
-  padding:10px;
+
+.item:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(255,215,0,0.5); }
+
+.item button {
+  padding:8px;
   border:none;
   border-radius:10px;
   background:gold;
   cursor:pointer;
+  width:80%;
+  margin-top:10px;
+  font-weight:bold;
 }
+
+.item button:hover { background:#ffea00; }
 </style>
 
 </head>
 <body>
 
 <h2>🛒 חנות NUX</h2>
-
 <div id="items"></div>
 
 <script>
+const API = "https://nuxcoin-e0d41-default-rtdb.firebaseio.com/";
+const itemsContainer = document.getElementById("items");
 
-// אפשר להחליף את כל הקובץ הזה בעתיד בלי לפגוע במערכת
-
-const shopItems = [
-{ name:"💰 מענק כסף", price:200, type:"money", value:500 },
-{ name:"⚡ בוסט עבודה", price:500, type:"boost", value:2 },
-{ name:"🎨 שם זוהר", price:300, type:"cosmetic", value:1 }
-];
-
-// הצגת פריטים
-function render(){
-items.innerHTML="";
-
-shopItems.forEach(item=>{
-items.innerHTML += `
-<div class="item">
-${item.name}<br>
-מחיר: ${item.price}<br>
-<button onclick='buy(${JSON.stringify(item)})'>קנה</button>
-</div>
-`;
-});
-}
-
-// קנייה
+// קנייה ושידור ל-index
 function buy(item){
+    const confirmBuy = confirm(`לקנות את ${item.name} במחיר ${item.price}?`);
+    if(!confirmBuy) return;
 
-// שליחה לחלון הראשי
-window.opener.postMessage({
-type:"BUY",
-item:item
-}, "*");
+    window.opener.postMessage({
+        type:"BUY",
+        item:item
+    }, "*");
 
-alert("נשלח למערכת הראשית");
+    alert(`${item.name} נשלח למערכת הראשית`);
 }
 
-// INIT
-render();
+// טעינת פריטים דינמית מ-Firebase
+async function render(){
+    try {
+        let res = await fetch(API + "shopItems.json");
+        let data = await res.json();
 
+        itemsContainer.innerHTML = "";
+
+        if(!data){
+            itemsContainer.innerHTML = "<p>אין כרגע פריטים בחנות</p>";
+            return;
+        }
+
+        for(let id in data){
+            let item = data[id];
+            itemsContainer.innerHTML += `
+            <div class="item">
+                <strong>${item.name}</strong><br>
+                <small>סוג: ${item.type}</small><br>
+                <strong>מחיר: ${item.price}</strong><br>
+                <button onclick='buy(${JSON.stringify(item)})'>קנה</button>
+            </div>
+            `;
+        }
+
+    } catch(e){
+        console.error("שגיאה בטעינת החנות:", e);
+        itemsContainer.innerHTML = "<p>שגיאה בטעינת החנות</p>";
+    }
+}
+
+// רענון אוטומטי כל 10 שניות
+render();
+setInterval(render, 10000);
 </script>
+
 </body>
 </html>
