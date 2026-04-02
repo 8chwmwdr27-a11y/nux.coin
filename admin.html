@@ -1,72 +1,127 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he">
 <head>
 <meta charset="UTF-8">
-<title>NUX - Command Center</title>
+<title>NUX ADMIN CONTROL</title>
+
 <style>
-body { background: #050505; color: #ffd700; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; }
-.panel { background: #111; border: 1px solid #333; padding: 25px; border-radius: 20px; display: inline-block; width: 400px; text-align: right; }
-input, select { padding: 12px; width: 100%; border-radius: 8px; border: 1px solid #222; background: #000; color: #fff; margin: 10px 0; box-sizing: border-box; }
-button { width: 100%; padding: 12px; background: #ffd700; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; margin-top: 10px; }
-.section { margin-top: 30px; border-top: 1px solid #222; padding-top: 20px; }
-.btn-red { background: #ff4444; color: white; }
-.btn-blue { background: #007bff; color: white; }
+body { background:#0a0a0a; color:#fff; font-family:Arial; text-align:center; }
+.container { background:#161616; padding:20px; border-radius:15px; width:400px; margin:20px auto; }
+input, select, button {
+  padding:10px; margin:5px; border-radius:10px; border:none;
+}
+button { background:gold; cursor:pointer; }
+.item { border:1px solid #333; margin:10px; padding:10px; border-radius:10px; }
 </style>
+
 </head>
 <body>
-<h1>NUX Command Center 🛰️</h1>
 
-<div class="panel">
-<h3>1. ניהול משימות</h3>
-<input type="text" id="taskInput" placeholder="הכנס משימה חדשה...">
-<button onclick="sendTask()">שלח לכולם</button>
-<button class="btn-red" onclick="clearData('tasks')">נקה את כל המשימות</button>
+<div class="container">
+<h2>🧠 מערכת שליטה</h2>
 
-<div class="section">
-<h3>2. הודעת מערכת (Alert)</h3>
-<input type="text" id="alertInput" placeholder="כתוב הודעה שתופיע בראש המסך...">
-<button class="btn-blue" onclick="sendAlert()">פרסם הודעה</button>
-<button onclick="clearData('alert')" style="background:#333; color:#fff;">מחק הודעה</button>
+<h3>📢 הודעה לכולם</h3>
+<input id="alertText" placeholder="הודעה">
+<button onclick="sendAlert()">שלח</button>
+
+<h3>💰 בונוס</h3>
+<input id="bonusUser" placeholder="שם משתמש">
+<input id="bonusAmount" placeholder="סכום">
+<button onclick="sendBonus()">שלח</button>
 </div>
 
-<div class="section">
-<h3>3. הענקת בונוס NUX</h3>
-<input type="text" id="bonusUser" placeholder="שם המשתמש (למשל: adam)">
-<input type="number" id="bonusAmount" placeholder="סכום הבונוס">
-<button onclick="sendBonus()" style="background:#00ff41; color:#000;">שלח מענק מזומן</button>
+<div class="container">
+<h3>🛒 יצירת פריט לחנות</h3>
+
+<input id="itemName" placeholder="שם פריט">
+<input id="itemPrice" placeholder="מחיר">
+
+<select id="itemType">
+<option value="salary">שדרוג שכר</option>
+<option value="speed">שדרוג מהירות</option>
+<option value="bot">בוט</option>
+<option value="pet">חיה</option>
+<option value="cosmetic">קוסמטי</option>
+</select>
+
+<input id="itemValue" placeholder="ערך (למשל 1.5 או 10)">
+
+<button onclick="createItem()">צור פריט</button>
 </div>
+
+<div class="container">
+<h3>📦 פריטים קיימים</h3>
+<div id="items"></div>
 </div>
 
 <script>
+
 const API = "https://nuxcoin-e0d41-default-rtdb.firebaseio.com/";
 
-async function sendTask() {
-const text = document.getElementById('taskInput').value;
-if(!text) return;
-await fetch(`${API}tasks.json`, { method: 'POST', body: JSON.stringify({ text }) });
-document.getElementById('taskInput').value = '';
-alert("המשימה נשלחה!");
+// ===== ALERT =====
+async function sendAlert(){
+let text=alertText.value;
+await fetch(API+"alert.json",{method:"PUT",body:JSON.stringify({text})});
+alert("נשלח");
 }
 
-async function sendAlert() {
-const text = document.getElementById('alertInput').value;
-await fetch(`${API}alert.json`, { method: 'PUT', body: JSON.stringify({ text }) });
-alert("ההודעה פורסמה!");
+// ===== BONUS =====
+async function sendBonus(){
+let u=bonusUser.value;
+let a=parseInt(bonusAmount.value);
+await fetch(API+"bonus/"+u+".json",{method:"PUT",body:JSON.stringify(a)});
+alert("בונוס נשלח");
 }
 
-async function sendBonus() {
-const user = document.getElementById('bonusUser').value;
-const amount = parseInt(document.getElementById('bonusAmount').value);
-if(!user || !amount) return;
-await fetch(`${API}bonuses/${user}.json`, { method: 'PUT', body: JSON.stringify(amount) });
-alert(`בונוס של ${amount} נשלח ל-${user}!`);
+// ===== CREATE ITEM =====
+async function createItem(){
+let name=itemName.value;
+let price=parseInt(itemPrice.value);
+let type=itemType.value;
+let value=parseFloat(itemValue.value);
+
+let item={
+name, price, type, value
+};
+
+await fetch(API+"shopItems.json",{
+method:"POST",
+body:JSON.stringify(item)
+});
+
+loadItems();
 }
 
-async function clearData(path) {
-await fetch(`${API}${path}.json`, { method: 'DELETE' });
-alert("הנתונים נמחקו!");
+// ===== LOAD ITEMS =====
+async function loadItems(){
+let res=await fetch(API+"shopItems.json");
+let data=await res.json();
+
+items.innerHTML="";
+
+for(let id in data){
+let i=data[id];
+
+items.innerHTML+=`
+<div class="item">
+${i.name} | ${i.price} NUX<br>
+סוג: ${i.type} | ערך: ${i.value}<br>
+<button onclick="deleteItem('${id}')">מחק</button>
+</div>
+`;
 }
+}
+
+// ===== DELETE =====
+async function deleteItem(id){
+await fetch(API+"shopItems/"+id+".json",{method:"DELETE"});
+loadItems();
+}
+
+// INIT
+loadItems();
+
 </script>
+
 </body>
 </html>
-
