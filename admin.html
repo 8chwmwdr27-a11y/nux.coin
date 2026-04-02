@@ -2,166 +2,184 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>NUX ADMIN PANEL</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NUX Admin Panel</title>
 <style>
-body { background:#0a0a0a; color:#fff; font-family:Arial; text-align:center; }
+:root { --gold:#ffd700; --dark:#0a0a0a; --card:#161616; --text:#f0f0f0; --accent:#00ff41; }
+body { background:#000; color:#fff; font-family:'Segoe UI', Tahoma, sans-serif; margin:0; padding:0; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; }
+.container { background: var(--card); padding:25px; border-radius:20px; width:500px; margin-top:20px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.7); position:relative; }
+h2 { color: var(--gold); margin-bottom:10px; }
+input, select { width:90%; padding:10px; margin:8px 0; border-radius:10px; border:1px solid #333; background:#000; color:#fff; text-align:center; outline:none; }
+button { width:90%; padding:12px; margin-top:10px; border:none; border-radius:12px; background: var(--gold); color:#000; font-weight:bold; cursor:pointer; transition:0.3s; }
+button:hover { transform:translateY(-2px); box-shadow:0 5px 15px rgba(255,215,0,0.5); }
 
-.container {
-  background:#161616;
-  padding:20px;
-  border-radius:15px;
-  width:400px;
-  margin:20px auto;
-}
+.section { border:1px solid #222; border-radius:15px; padding:15px; margin:15px 0; background:#0f0f0f; }
+.section h3 { color: var(--accent); margin-bottom:10px; }
 
-input, select, button {
-  padding:10px;
-  margin:5px;
-  border-radius:10px;
-  border:none;
-}
+.item { border:1px solid #333; padding:10px; margin:10px; border-radius:10px; background:#161616; transition:0.3s; }
+.item:hover { transform:translateY(-3px); box-shadow:0 5px 15px rgba(255,215,0,0.3); }
 
-button {
-  background:gold;
-  cursor:pointer;
-}
-
-.item {
-  border:1px solid #333;
-  padding:10px;
-  margin:10px;
-  border-radius:10px;
-}
+textarea { width:90%; padding:10px; border-radius:10px; background:#000; color:#fff; border:1px solid #333; resize:none; }
 </style>
-
 </head>
 <body>
 
 <div class="container">
-<h2>🔐 מערכת שליטה NUX</h2>
+<h2>🔐 לוח ניהול NUX</h2>
 
-<h3>📢 הודעה לכל המשתמשים</h3>
-<input id="alertText" placeholder="כתוב הודעה">
-<button onclick="sendAlert()">שלח</button>
+<!-- הודעות -->
+<div class="section">
+<h3>📢 שליחת הודעה למשתמשים</h3>
+<textarea id="alert-textarea" placeholder="הקלד הודעה..."></textarea><br>
+<button onclick="sendAlert()">שלח הודעה</button>
+</div>
 
-<h3>💰 בונוס למשתמש</h3>
-<input id="bonusUser" placeholder="שם משתמש">
-<input id="bonusAmount" placeholder="סכום">
+<!-- בונוסים / כסף -->
+<div class="section">
+<h3>💰 בונוסים למשתמש</h3>
+<input type="text" id="bonus-user" placeholder="שם משתמש">
+<input type="number" id="bonus-amount" placeholder="כמות NUX">
 <button onclick="sendBonus()">שלח בונוס</button>
 </div>
 
-<div class="container">
-<h3>🛒 יצירת פריט לחנות</h3>
-
-<input id="itemName" placeholder="שם פריט">
-<input id="itemPrice" placeholder="מחיר">
-
-<select id="itemType">
+<!-- ניהול החנות -->
+<div class="section">
+<h3>🛒 ניהול חנות</h3>
+<input type="text" id="item-name" placeholder="שם פריט">
+<input type="number" id="item-price" placeholder="מחיר">
+<select id="item-type">
 <option value="money">💰 כסף</option>
 <option value="boost">⚡ בוסט</option>
-<option value="cosmetic">🎨 קוסמטי</option>
-<option value="bot">🤖 בוט</option>
-<option value="pet">🐾 חיה</option>
+<option value="cosmetic">🎨 קוסמטיקה</option>
+<option value="pet">🐾 חיות</option>
 </select>
-
-<input id="itemValue" placeholder="ערך">
-
-<button onclick="createItem()">צור פריט</button>
+<button onclick="addItem()">הוסף פריט</button>
+<button onclick="loadItems()">טען פריטים</button>
+<div id="items-list"></div>
 </div>
 
-<div class="container">
-<h3>📦 ניהול פריטים</h3>
-<div id="items"></div>
+<!-- משימות -->
+<div class="section">
+<h3>📝 ניהול משימות</h3>
+<input type="text" id="task-text" placeholder="טקסט משימה">
+<button onclick="addTask()">הוסף משימה</button>
+<div id="task-list"></div>
+</div>
+
 </div>
 
 <script>
-
-// 🔥 FIREBASE שלך
 const API = "https://nuxcoin-e0d41-default-rtdb.firebaseio.com/";
 
-// ===== ALERT =====
+// --- שליחת הודעה ---
 async function sendAlert(){
-let text = document.getElementById("alertText").value;
-
-await fetch(API + "alert.json", {
-method:"PUT",
-body: JSON.stringify({text})
-});
-
-alert("הודעה נשלחה");
+    const text = document.getElementById('alert-textarea').value.trim();
+    if(!text) return alert("הכנס הודעה");
+    await fetch(`${API}alert.json`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({text})
+    });
+    alert("הודעה נשלחה לכל המשתמשים");
 }
 
-// ===== BONUS =====
+// --- שליחת בונוס ---
 async function sendBonus(){
-let user = document.getElementById("bonusUser").value;
-let amount = parseInt(document.getElementById("bonusAmount").value);
-
-await fetch(API + "bonus/" + user + ".json", {
-method:"PUT",
-body: JSON.stringify(amount)
-});
-
-alert("בונוס נשלח");
+    const user = document.getElementById('bonus-user').value.trim();
+    const amount = parseInt(document.getElementById('bonus-amount').value);
+    if(!user || isNaN(amount)) return alert("הכנס שם משתמש וכמות תקינה");
+    await fetch(`${API}bonuses/${user}.json`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(amount)
+    });
+    alert(`בונוס של ${amount} NUX נשלח ל-${user}`);
 }
 
-// ===== CREATE ITEM =====
-async function createItem(){
+// --- ניהול חנות ---
+async function addItem(){
+    const name=document.getElementById('item-name').value.trim();
+    const price=parseInt(document.getElementById('item-price').value);
+    const type=document.getElementById('item-type').value;
+    if(!name || isNaN(price)) return alert("הכנס שם ו/או מחיר תקינים");
 
-let name = document.getElementById("itemName").value;
-let price = parseInt(document.getElementById("itemPrice").value);
-let type = document.getElementById("itemType").value;
-let value = parseFloat(document.getElementById("itemValue").value);
-
-let item = { name, price, type, value };
-
-await fetch(API + "shopItems.json", {
-method:"POST",
-body: JSON.stringify(item)
-});
-
-loadItems();
+    const res = await fetch(`${API}shopItems.json`);
+    const data = await res.json() || {};
+    const id = Date.now();
+    data[id] = {name,price,type};
+    await fetch(`${API}shopItems.json`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+    });
+    alert("פריט נוסף בהצלחה");
+    loadItems();
 }
 
-// ===== LOAD ITEMS =====
+// --- טען פריטים ---
 async function loadItems(){
-
-let res = await fetch(API + "shopItems.json");
-let data = await res.json();
-
-let container = document.getElementById("items");
-container.innerHTML = "";
-
-for(let id in data){
-
-let i = data[id];
-
-container.innerHTML += `
-<div class="item">
-<strong>${i.name}</strong><br>
-מחיר: ${i.price}<br>
-סוג: ${i.type}<br>
-ערך: ${i.value}<br>
-
-<button onclick="deleteItem('${id}')">❌ מחק</button>
-</div>
-`;
-}
+    const list = document.getElementById('items-list');
+    const res = await fetch(`${API}shopItems.json`);
+    const data = await res.json() || {};
+    list.innerHTML="";
+    for(let id in data){
+        const item=data[id];
+        const div=document.createElement('div');
+        div.className='item';
+        div.innerHTML=`${item.name} | מחיר: ${item.price} | סוג: ${item.type} <button onclick='deleteItem(${id})'>🗑️ מחק</button>`;
+        list.appendChild(div);
+    }
 }
 
-// ===== DELETE =====
+// --- מחיקת פריט ---
 async function deleteItem(id){
-
-await fetch(API + "shopItems/" + id + ".json", {
-method:"DELETE"
-});
-
-loadItems();
+    const res = await fetch(`${API}shopItems/${id}.json`,{method:'DELETE'});
+    alert("פריט נמחק");
+    loadItems();
 }
 
-// ===== INIT =====
-loadItems();
+// --- ניהול משימות ---
+async function addTask(){
+    const text = document.getElementById('task-text').value.trim();
+    if(!text) return alert("הכנס טקסט משימה");
+    const res = await fetch(`${API}tasks.json`);
+    const data = await res.json() || {};
+    const id = Date.now();
+    data[id] = {text};
+    await fetch(`${API}tasks.json`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+    });
+    alert("משימה נוספה");
+    loadTasks();
+}
 
+// --- טען משימות ---
+async function loadTasks(){
+    const list=document.getElementById('task-list');
+    const res = await fetch(`${API}tasks.json`);
+    const data = await res.json() || {};
+    list.innerHTML="";
+    for(let id in data){
+        const t=data[id];
+        const div=document.createElement('div');
+        div.className='item';
+        div.innerHTML=`${t.text} <button onclick='deleteTask(${id})'>🗑️ מחק</button>`;
+        list.appendChild(div);
+    }
+}
+
+// --- מחיקת משימה ---
+async function deleteTask(id){
+    await fetch(`${API}tasks/${id}.json`,{method:'DELETE'});
+    loadTasks();
+}
+
+// INIT
+loadItems();
+loadTasks();
 </script>
+
 </body>
 </html>
