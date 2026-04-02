@@ -3,19 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NUX Terminal</title>
+<title>NUX Terminal Pro – מערכת מלאה</title>
 <style>
 :root { --gold:#ffd700; --dark:#0a0a0a; --card:#161616; --accent:#00ff41; --text:#fff; }
-body { background:var(--dark); color:var(--text); font-family:'Segoe UI', Tahoma, sans-serif; margin:0; padding:20px; }
-.container { max-width:500px; margin:auto; padding:20px; background:var(--card); border-radius:20px; border:1px solid #333; text-align:center; position:relative; }
-h2 { color:var(--gold); margin-bottom:15px; }
-.balance-box { background:#000; padding:15px; border-radius:15px; margin:20px 0; border:1px solid #222; position:relative; overflow:hidden; }
-.balance { font-size:40px; font-weight:900; color:var(--gold); text-shadow:0 0 15px rgba(255,215,0,0.5); }
-button { padding:10px 15px; border:none; border-radius:12px; background:var(--gold); color:#000; font-weight:bold; cursor:pointer; margin:5px; transition:0.3s; }
+body { background: var(--dark); color: var(--text); font-family:'Segoe UI', Tahoma, sans-serif; margin:0; padding:0; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; }
+.container { background: var(--card); border-radius:20px; padding:25px; margin:20px; width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.8); position:relative; }
+h2 { color: var(--gold); text-align:center; }
+input { width:90%; padding:12px; margin:8px 0; border-radius:10px; border:1px solid #333; background:#000; color:#fff; text-align:center; outline:none; }
+button { width:90%; padding:12px; margin:10px 0; border:none; border-radius:12px; background:var(--gold); color:#000; font-weight:bold; cursor:pointer; transition:0.3s; }
 button:hover { transform:translateY(-2px); box-shadow:0 5px 15px rgba(255,215,0,0.4); }
-#animals,#bots { margin-top:20px; display:flex; justify-content:center; flex-wrap:wrap; }
-.item { margin:5px; padding:5px 10px; background:#111; border-radius:8px; border:1px solid #333; font-size:12px; }
+.balance-box { background:#000; padding:15px; border-radius:12px; margin:15px 0; text-align:center; border:1px solid #222; }
+.balance { font-size:36px; font-weight:900; color:var(--gold); text-shadow:0 0 15px rgba(255,215,0,0.5); }
+.status { font-size:14px; color:#aaa; margin-bottom:5px; }
 .hidden { display:none !important; }
+.pet-box { background:#111; border-radius:12px; padding:10px; margin:10px 0; border:1px solid #333; }
+.bot-box { background:#111; border-radius:12px; padding:10px; margin:10px 0; border:1px solid #333; }
 .coin-effect { position:absolute; top:-20px; right:10px; font-size:20px; color:var(--gold); animation:coin-drop 0.5s ease forwards; }
 @keyframes coin-drop { 0% { transform:translateY(-20px); opacity:0; } 50% { opacity:1; } 100% { transform:translateY(0px); opacity:1; } }
 </style>
@@ -23,127 +25,151 @@ button:hover { transform:translateY(-2px); box-shadow:0 5px 15px rgba(255,215,0,
 <body>
 
 <div id="auth-screen" class="container">
-<h2>NUX Terminal</h2>
-<p style="font-size:13px; color:#888;">התחבר למערכת</p>
+<h2>NUX Terminal – התחברות</h2>
 <input type="text" id="username" placeholder="שם משתמש">
 <input type="password" id="password" placeholder="סיסמה">
 <button onclick="auth()">כניסה</button>
+<button onclick="adminLogin()" style="background:#ff4444;">כניסת מנהל 🔐</button>
 </div>
 
 <div id="main-screen" class="container hidden">
 <h2>ברוך הבא, <span id="user-tag"></span></h2>
 
 <div class="balance-box">
-<div style="font-size:12px; color:#666; margin-bottom:5px;">יתרת NUX נוכחית</div>
+<div class="status">יתרת NUX נוכחית</div>
 <div class="balance" id="balance">0</div>
 </div>
 
-<div>
 <button onclick="openShop()">🛒 חנות</button>
-<button onclick="earnMoney()">💼 עבודות אוטומטיות</button>
+
+<div id="pet-section" class="pet-box hidden">
+<h3>🐶 חיית מחמד</h3>
+<div>שם: <span id="pet-name"></span></div>
+<div>רעב: <span id="pet-hunger"></span>%</div>
+<div>צמא: <span id="pet-thirst"></span>%</div>
+<div>גיל: <span id="pet-age"></span></div>
+<button onclick="feedPet()">האכיל</button>
+<button onclick="waterPet()">השקה</button>
 </div>
 
-<div id="animals">
-<h3>🐾 חיות:</h3>
+<div id="bot-section" class="bot-box hidden">
+<h3>🤖 בוטים פעילים</h3>
+<div id="bot-list"></div>
 </div>
 
-<div id="bots">
-<h3>🤖 בוטים:</h3>
-</div>
-
-<button id="admin-btn" class="hidden" onclick="openAdmin()">🔐 לוח ניהול</button>
+<button onclick="logout()" style="background:#441111; color:#ff4444;">התנתק</button>
 </div>
 
 <script>
 const API = "https://nuxcoin-e0d41-default-rtdb.firebaseio.com/";
-let db = JSON.parse(localStorage.getItem('nux_pro_db')) || {};
-let user = null;
 
-// --- התחברות ---
+let db = JSON.parse(localStorage.getItem('nux_db')) || {};
+let user=null;
+
 function auth(){
-    const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value;
-    if(!u||!p) return alert("מלא שם וסיסמה");
-    if(!db[u]) db[u] = { pass:p, balance:0, animals:[], bots:[] };
-    if(db[u].pass!==p) return alert("סיסמה שגויה");
-    user = u;
-    localStorage.setItem('nux_user',user);
+    const u=document.getElementById('username').value.trim();
+    const p=document.getElementById('password').value.trim();
+    if(!u || !p) return alert("יש למלא את כל השדות");
+    if(!db[u]) db[u]={pass:p, balance:0, pet:null, bots:[], boost:1};
+    if(db[u].pass !== p) return alert("סיסמה שגויה");
+    user=u;
     showMain();
 }
 
-// --- הצגת מסך ראשי ---
+function adminLogin(){
+    const p=document.getElementById('password').value.trim();
+    if(p==="2004"){
+        alert("ברוך הבא למנהל!");
+        window.location.href="admin.html";
+    } else {
+        alert("סיסמה שגויה למנהל");
+    }
+}
+
 function showMain(){
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('main-screen').classList.remove('hidden');
-    document.getElementById('user-tag').innerText = user;
-    if(user==='admin') document.getElementById('admin-btn').classList.remove('hidden');
+    document.getElementById('user-tag').innerText=user;
     updateUI();
+    setInterval(runBots,1000);
 }
 
-// --- עדכון UI ---
 function updateUI(){
-    const data = db[user];
-    document.getElementById('balance').innerText = Math.floor(data.balance);
-    
-    // חיות
-    const animalsDiv = document.getElementById('animals');
-    animalsDiv.innerHTML='<h3>🐾 חיות:</h3>';
-    data.animals.forEach(a=>{ animalsDiv.innerHTML+=`<div class="item">${a}</div>`; });
-    
-    // בוטים
-    const botsDiv = document.getElementById('bots');
-    botsDiv.innerHTML='<h3>🤖 בוטים:</h3>';
-    data.bots.forEach(b=>{ botsDiv.innerHTML+=`<div class="item">${b}</div>`; });
+    const udata=db[user];
+    document.getElementById('balance').innerText=Math.floor(udata.balance);
+    if(udata.pet){
+        document.getElementById('pet-section').classList.remove('hidden');
+        document.getElementById('pet-name').innerText=udata.pet.name;
+        document.getElementById('pet-hunger').innerText=udata.pet.hunger;
+        document.getElementById('pet-thirst').innerText=udata.pet.thirst;
+        document.getElementById('pet-age').innerText=udata.pet.age;
+    }
+    if(udata.bots.length>0){
+        document.getElementById('bot-section').classList.remove('hidden');
+        const botList=document.getElementById('bot-list');
+        botList.innerHTML="";
+        udata.bots.forEach(b=>botList.innerHTML+=`<div>${b.name} – rate:${b.rate}/sec</div>`);
+    }
 }
 
-// --- שמירת DB ---
-function save(){ localStorage.setItem('nux_pro_db',JSON.stringify(db)); }
+function openShop(){ window.open("shop.html","_blank","width=400,height=600"); }
 
-// --- חנות ---
-function openShop(){
-    const shopWin = window.open('shop.html','_blank','width=500,height=700');
-    window.addEventListener('message', e=>{
-        const msg = e.data;
-        if(msg.type==='BUY'){
-            const item = msg.item;
-            if(db[user].balance<item.price) return alert("אין מספיק NUX");
-            db[user].balance -= item.price;
-            if(item.type==='money') db[user].balance += item.value;
-            else if(item.type==='boost') alert("הבוסט הופעל!");
-            else if(item.type==='cosmetic') alert("שדרוג קוסמטי הותקן!");
-            else if(item.type==='pet') db[user].animals.push(item.name);
-            else if(item.type==='bot') db[user].bots.push(item.name);
-            save(); updateUI(); coinEffect();
-        }
-    });
+// חיות
+function feedPet(){
+    if(user && db[user].pet){
+        db[user].pet.hunger=Math.min(100, db[user].pet.hunger+20);
+        db[user].balance+=10;
+        save();
+        updateUI();
+        coinEffect();
+    }
+}
+function waterPet(){
+    if(user && db[user].pet){
+        db[user].pet.thirst=Math.min(100, db[user].pet.thirst+20);
+        db[user].balance+=10;
+        save();
+        updateUI();
+        coinEffect();
+    }
 }
 
-// --- אפקט מטבע ---
+// בוטים
+function runBots(){
+    if(!user) return;
+    const udata=db[user];
+    if(udata.bots.length>0){
+        udata.bots.forEach(bot=>{ udata.balance += bot.rate; });
+        save();
+        updateUI();
+    }
+}
+
+// מטבעות
 function coinEffect(){
-    const coin = document.createElement('div');
+    const coin=document.createElement('div');
     coin.className='coin-effect';
     coin.innerText='💰';
     document.body.appendChild(coin);
     setTimeout(()=>coin.remove(),600);
 }
 
-// --- עבודה אוטומטית ---
-function earnMoney(){
-    if(!db[user].jobInterval){
-        db[user].jobInterval = setInterval(()=>{
-            db[user].balance += 5;
-            save();
-            updateUI();
-        },1000);
+function save(){ localStorage.setItem('nux_db',JSON.stringify(db)); }
+function logout(){ user=null; document.getElementById('auth-screen').classList.remove('hidden'); document.getElementById('main-screen').classList.add('hidden'); }
+
+window.addEventListener('message', e=>{
+    if(e.data.type==='BUY' && user){
+        const item=e.data.item;
+        if(item.type==='money') db[user].balance += item.value;
+        if(item.type==='boost') db[user].boost = item.value;
+        if(item.type==='pet') db[user].pet = item.value;
+        if(item.type==='bot') db[user].bots.push(item.value);
+        save();
+        updateUI();
+        coinEffect();
     }
-}
-
-// --- אדמין ---
-function openAdmin(){ window.open('admin.html','_blank','width=700,height=800'); }
-
-// INIT
-const storedUser = localStorage.getItem('nux_user');
-if(storedUser && db[storedUser]) { user=storedUser; showMain(); }
+});
 </script>
+
 </body>
 </html>
