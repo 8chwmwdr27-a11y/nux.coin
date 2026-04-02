@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NUX SHOP</title>
+<title>NUX SHOP – גרסה מורחבת</title>
 <style>
 :root { --gold:#ffd700; --dark:#0a0a0a; --card:#161616; --accent:#00ff41; --text:#fff; }
 body { background:#000; color:#fff; font-family:'Segoe UI', Tahoma, sans-serif; margin:0; padding:20px; text-align:center; }
@@ -15,70 +15,76 @@ h2 { color: var(--gold); margin-bottom:20px; }
 .item p { font-size:14px; margin:3px 0; }
 button { padding:8px 12px; border:none; border-radius:10px; background:var(--gold); color:#000; font-weight:bold; cursor:pointer; transition:0.3s; }
 button:hover { transform:translateY(-2px); box-shadow:0 5px 15px rgba(255,215,0,0.4); }
+.coin-effect { position:absolute; top:-20px; right:10px; font-size:20px; color:var(--gold); animation:coin-drop 0.5s ease forwards; }
 @keyframes coin-drop { 0% { transform:translateY(-20px); opacity:0; } 50% { opacity:1; } 100% { transform:translateY(0px); opacity:1; } }
-.coin-effect { position:absolute; top:-20px; right:10px; font-size:20px; color:var(--gold); animation: coin-drop 0.5s ease forwards; }
 </style>
 </head>
 <body>
 
-<h2>🛒 חנות NUX</h2>
+<h2>🛒 חנות NUX – 15 מוצרים</h2>
 <div id="items"></div>
 
 <script>
 const API = "https://nuxcoin-e0d41-default-rtdb.firebaseio.com/";
-let userBalance = parseInt(localStorage.getItem('nux_user_balance')) || 0;
 
-// --- קנייה ---
+// 15 מוצרים עם השפעות שונות
+const shopItems = [
+{ name:"💰 מענק כסף קטן", price:100, type:"money", value:200 },
+{ name:"💰 מענק כסף בינוני", price:300, type:"money", value:600 },
+{ name:"💰 מענק כסף גדול", price:600, type:"money", value:1500 },
+{ name:"⚡ בוסט עבודה x2", price:250, type:"boost", value:2 },
+{ name:"⚡ בוסט עבודה x5", price:600, type:"boost", value:5 },
+{ name:"🎨 שם זוהר", price:300, type:"cosmetic", value:1 },
+{ name:"🌈 שם פרופיל מיוחד", price:400, type:"cosmetic", value:2 },
+{ name:"🐶 חיית מחמד – כלב", price:350, type:"pet", value:{name:"כלב", hunger:100, thirst:100, age:1} },
+{ name:"🐱 חיית מחמד – חתול", price:350, type:"pet", value:{name:"חתול", hunger:100, thirst:100, age:1} },
+{ name:"🐦 חיית מחמד – ציפור", price:300, type:"pet", value:{name:"ציפור", hunger:100, thirst:100, age:1} },
+{ name:"🤖 בוט קטן", price:400, type:"bot", value:{name:"בוט קטן", rate:2} },
+{ name:"🤖 בוט גדול", price:800, type:"bot", value:{name:"בוט גדול", rate:5} },
+{ name:"📢 הודעת מערכת קטנה", price:150, type:"alert", value:"המערכת שלך שולחת הודעה קטנה!" },
+{ name:"📢 הודעת מערכת גדולה", price:500, type:"alert", value:"המערכת שולחת הודעת מערכת גדולה!" },
+{ name:"🌟 חבילה שדרוג ויזואלי מלאה", price:1000, type:"cosmetic", value:3 }
+];
+
+// הצגת פריטים
+function render(){
+    const itemsDiv = document.getElementById('items');
+    itemsDiv.innerHTML="";
+    shopItems.forEach(item=>{
+        const div = document.createElement('div');
+        div.className='item';
+        div.innerHTML=`
+            <h3>${item.name}</h3>
+            <p>💰 מחיר: ${item.price}</p>
+            <p>🔹 סוג: ${item.type}</p>
+            <button onclick='buy(${JSON.stringify(item)})'>קנה</button>
+        `;
+        itemsDiv.appendChild(div);
+    });
+}
+
+// קנייה והשלכת השפעה למערכת הראשית
 function buy(item){
-    if(userBalance < item.price) return alert("אין לך מספיק NUX");
-    userBalance -= item.price;
-    localStorage.setItem('nux_user_balance', userBalance);
+    if(window.opener){
+        window.opener.postMessage({type:'BUY', item:item}, '*');
+        alert(`קנית את ${item.name} בהצלחה!`);
+        coinEffect();
+    } else {
+        alert("לא נמצא מסך ראשי להתחברות");
+    }
+}
 
-    // אפקט מטבע
+// אפקט מטבע
+function coinEffect(){
     const coin = document.createElement('div');
     coin.className='coin-effect';
     coin.innerText='💰';
     document.body.appendChild(coin);
     setTimeout(()=>coin.remove(),600);
-
-    alert(`קנית את ${item.name} ב-${item.price} NUX!\nיתרה: ${userBalance}`);
-    
-    // שליחת הקנייה חזרה ל-index
-    if(window.opener){
-        window.opener.postMessage({type:'BUY', item:item}, '*');
-    }
-}
-
-// --- טעינת פריטים ---
-async function render(){
-    const itemsDiv = document.getElementById('items');
-    itemsDiv.innerHTML="טוען...";
-    try{
-        const res = await fetch(`${API}shopItems.json`);
-        const data = await res.json() || {};
-        itemsDiv.innerHTML="";
-        for(let id in data){
-            const item = data[id];
-            const div = document.createElement('div');
-            div.className='item';
-            div.innerHTML=`
-                <h3>${item.name}</h3>
-                <p>💰 מחיר: ${item.price}</p>
-                <p>🔹 סוג: ${item.type}</p>
-                <button onclick='buy(${JSON.stringify(item)})'>קנה</button>
-            `;
-            itemsDiv.appendChild(div);
-        }
-        if(Object.keys(data).length===0) itemsDiv.innerHTML="אין פריטים כרגע";
-    }catch(e){
-        itemsDiv.innerHTML="שגיאה בטעינת פריטים";
-    }
 }
 
 // INIT
 render();
-
-// אפשר להוסיף חידוש אנימציות נוספים בעתיד
 </script>
 
 </body>
