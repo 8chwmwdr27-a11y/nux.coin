@@ -2,25 +2,39 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>NUX Admin Control</title>
+<title>NUX - Command Center</title>
 <style>
-body { background: #000; color: #ffd700; font-family: sans-serif; text-align: center; padding: 50px; }
-.admin-panel { border: 2px solid #ffd700; padding: 20px; display: inline-block; border-radius: 15px; background: #111; }
-input { padding: 10px; width: 250px; border-radius: 5px; border: none; }
-button { padding: 10px 20px; background: #ffd700; border: none; font-weight: bold; cursor: pointer; }
-.task-list { margin-top: 30px; text-align: right; width: 300px; margin-left: auto; margin-right: auto; }
-.t-item { background: #222; margin: 5px 0; padding: 10px; display: flex; justify-content: space-between; }
+body { background: #050505; color: #ffd700; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; }
+.panel { background: #111; border: 1px solid #333; padding: 25px; border-radius: 20px; display: inline-block; width: 400px; text-align: right; }
+input, select { padding: 12px; width: 100%; border-radius: 8px; border: 1px solid #222; background: #000; color: #fff; margin: 10px 0; box-sizing: border-box; }
+button { width: 100%; padding: 12px; background: #ffd700; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; margin-top: 10px; }
+.section { margin-top: 30px; border-top: 1px solid #222; padding-top: 20px; }
+.btn-red { background: #ff4444; color: white; }
+.btn-blue { background: #007bff; color: white; }
 </style>
 </head>
 <body>
-<div class="admin-panel">
-<h2>לוח מנהל NUX</h2>
-<p>הוספת משימה לכל העובדים:</p>
-<input type="text" id="taskInput" placeholder="הקלד משימה חדשה...">
-<button onclick="sendTask()">שלח משימה</button>
+<h1>NUX Command Center 🛰️</h1>
 
-<div class="task-list" id="list"></div>
-<button onclick="clearAll()" style="background:red; color:white; margin-top:20px;">נקה את כל המשימות</button>
+<div class="panel">
+<h3>1. ניהול משימות</h3>
+<input type="text" id="taskInput" placeholder="הכנס משימה חדשה...">
+<button onclick="sendTask()">שלח לכולם</button>
+<button class="btn-red" onclick="clearData('tasks')">נקה את כל המשימות</button>
+
+<div class="section">
+<h3>2. הודעת מערכת (Alert)</h3>
+<input type="text" id="alertInput" placeholder="כתוב הודעה שתופיע בראש המסך...">
+<button class="btn-blue" onclick="sendAlert()">פרסם הודעה</button>
+<button onclick="clearData('alert')" style="background:#333; color:#fff;">מחק הודעה</button>
+</div>
+
+<div class="section">
+<h3>3. הענקת בונוס NUX</h3>
+<input type="text" id="bonusUser" placeholder="שם המשתמש (למשל: adam)">
+<input type="number" id="bonusAmount" placeholder="סכום הבונוס">
+<button onclick="sendBonus()" style="background:#00ff41; color:#000;">שלח מענק מזומן</button>
+</div>
 </div>
 
 <script>
@@ -29,30 +43,29 @@ const API = 'https://firebaseio.com';
 async function sendTask() {
 const text = document.getElementById('taskInput').value;
 if(!text) return;
-await fetch(API, {
-method: 'POST',
-body: JSON.stringify({ text: text, time: Date.now() })
-});
+await fetch(`${API}tasks.json`, { method: 'POST', body: JSON.stringify({ text }) });
 document.getElementById('taskInput').value = '';
-loadTasks();
+alert("המשימה נשלחה!");
 }
 
-async function loadTasks() {
-const res = await fetch(API);
-const data = await res.json();
-let html = '';
-for(let id in data) {
-html += `<div class="t-item">${data[id].text}</div>`;
-}
-document.getElementById('list').innerHTML = html;
+async function sendAlert() {
+const text = document.getElementById('alertInput').value;
+await fetch(`${API}alert.json`, { method: 'PUT', body: JSON.stringify({ text }) });
+alert("ההודעה פורסמה!");
 }
 
-async function clearAll() {
-await fetch(API, { method: 'DELETE' });
-loadTasks();
+async function sendBonus() {
+const user = document.getElementById('bonusUser').value;
+const amount = parseInt(document.getElementById('bonusAmount').value);
+if(!user || !amount) return;
+await fetch(`${API}bonuses/${user}.json`, { method: 'PUT', body: JSON.stringify(amount) });
+alert(`בונוס של ${amount} נשלח ל-${user}!`);
 }
 
-loadTasks();
+async function clearData(path) {
+await fetch(`${API}${path}.json`, { method: 'DELETE' });
+alert("הנתונים נמחקו!");
+}
 </script>
 </body>
 </html>
