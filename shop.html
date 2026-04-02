@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>NUX SHOP</title>
+
+<style>
+body { background:#000; color:#fff; font-family:Arial; text-align:center; }
+.item {
+  border:1px solid #333;
+  padding:10px;
+  margin:10px;
+  border-radius:10px;
+}
+button {
+  padding:10px;
+  border:none;
+  border-radius:10px;
+  background:gold;
+  cursor:pointer;
+}
+</style>
+
+</head>
+<body>
+
+<h2>🛒 חנות NUX</h2>
+
+<div id="items"></div>
+
+<script>
+
+// אפשר להחליף את כל הקובץ הזה בעתיד בלי לפגוע במערכת
+
+const shopItems = [
+{ name:"💰 מענק כסף", price:200, type:"money", value:500 },
+{ name:"⚡ בוסט עבודה", price:500, type:"boost", value:2 },
+{ name:"🎨 שם זוהר", price:300, type:"cosmetic", value:1 }
+];
+
+// הצגת פריטים
+function render(){
+items.innerHTML="";
+
+shopItems.forEach(item=>{
+items.innerHTML += `
+<div class="item">
+${item.name}<br>
+מחיר: ${item.price}<br>
+<button onclick='buy(${JSON.stringify(item)})'>קנה</button>
+</div>
+`;
+});
+}
+
+// קנייה
+function buy(item){
+
+// שליחה לחלון הראשי
+window.opener.postMessage({
+type:"BUY",
+item:item
+}, "*");
+
+alert("נשלח למערכת הראשית");
+}
+
+// INIT
+render();
+
+</script>
+</body>
+</html>
