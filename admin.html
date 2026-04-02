@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>NUX Admin Control</title>
+<style>
+body { background: #000; color: #ffd700; font-family: sans-serif; text-align: center; padding: 50px; }
+.admin-panel { border: 2px solid #ffd700; padding: 20px; display: inline-block; border-radius: 15px; background: #111; }
+input { padding: 10px; width: 250px; border-radius: 5px; border: none; }
+button { padding: 10px 20px; background: #ffd700; border: none; font-weight: bold; cursor: pointer; }
+.task-list { margin-top: 30px; text-align: right; width: 300px; margin-left: auto; margin-right: auto; }
+.t-item { background: #222; margin: 5px 0; padding: 10px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div class="admin-panel">
+<h2>לוח מנהל NUX</h2>
+<p>הוספת משימה לכל העובדים:</p>
+<input type="text" id="taskInput" placeholder="הקלד משימה חדשה...">
+<button onclick="sendTask()">שלח משימה</button>
+
+<div class="task-list" id="list"></div>
+<button onclick="clearAll()" style="background:red; color:white; margin-top:20px;">נקה את כל המשימות</button>
+</div>
+
+<script>
+const API = 'https://firebaseio.com';
+
+async function sendTask() {
+const text = document.getElementById('taskInput').value;
+if(!text) return;
+await fetch(API, {
+method: 'POST',
+body: JSON.stringify({ text: text, time: Date.now() })
+});
+document.getElementById('taskInput').value = '';
+loadTasks();
+}
+
+async function loadTasks() {
+const res = await fetch(API);
+const data = await res.json();
+let html = '';
+for(let id in data) {
+html += `<div class="t-item">${data[id].text}</div>`;
+}
+document.getElementById('list').innerHTML = html;
+}
+
+async function clearAll() {
+await fetch(API, { method: 'DELETE' });
+loadTasks();
+}
+
+loadTasks();
+</script>
+</body>
+</html>
+
