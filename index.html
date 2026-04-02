@@ -3,62 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NUX Work Terminal</title>
+<title>NUX Work Terminal Pro</title>
 <style>
-:root { --gold: #ffd700; --dark: #121212; --card: #1e1e1e; --text: #e0e0e0; }
-body { background-color: var(--dark); color: var(--text); font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-.container { background: var(--card); padding: 30px; border-radius: 20px; border: 1px solid var(--gold); box-shadow: 0 15px 35px rgba(0,0,0,0.7); width: 350px; text-align: center; }
-input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; text-align: center; }
-button { width: 100%; padding: 12px; margin-top: 10px; background: var(--gold); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #000; }
+:root { --gold: #ffd700; --dark: #0a0a0a; --card: #161616; --text: #f0f0f0; }
+body { background-color: var(--dark); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
+.container { background: var(--card); padding: 35px; border-radius: 25px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.8); width: 360px; text-align: center; position: relative; }
+.container::after { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border-radius: 27px; background: linear-gradient(45deg, transparent, var(--gold), transparent); z-index: -1; opacity: 0.3; }
+
+input { width: 90%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #333; background: #000; color: #fff; text-align: center; outline: none; }
+button { width: 100%; padding: 14px; margin-top: 15px; background: var(--gold); border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: #000; transition: 0.3s; }
+button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4); }
 .hidden { display: none !important; }
-.balance { font-size: 40px; font-weight: bold; color: var(--gold); margin: 15px 0; }
-.task-list { background: #111; padding: 15px; border-radius: 10px; text-align: right; margin-top: 20px; border: 1px dashed var(--gold); }
-.task-item { border-bottom: 1px solid #333; padding: 8px 0; font-size: 14px; display: flex; align-items: center; }
-.task-item::before { content: "●"; color: var(--gold); margin-left: 8px; }
-.logout-link { color: #ff4444; font-size: 12px; cursor: pointer; margin-top: 20px; display: block; }
+
+.balance-box { background: #000; padding: 20px; border-radius: 15px; margin: 20px 0; border: 1px solid #222; }
+.balance { font-size: 45px; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px rgba(255,215,0,0.5); }
+
+.alert-bar { background: var(--gold); color: #000; padding: 8px; font-size: 13px; font-weight: bold; border-radius: 8px; margin-bottom: 15px; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+
+.task-list { background: #0e0e0e; padding: 15px; border-radius: 15px; text-align: right; margin-top: 25px; border: 1px solid #333; }
+.task-item { border-bottom: 1px solid #222; padding: 12px 5px; font-size: 14px; display: flex; justify-content: space-between; }
+.status-pill { background: #00ff41; color: #000; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
 </style>
 </head>
 <body>
 
 <div id="auth-screen" class="container">
-<h2>כניסה לעובד NUX</h2>
+<h2 style="color: var(--gold);">NUX Terminal</h2>
+<p style="font-size: 13px; color: #888;">התחבר למערכת הכרייה המרכזית</p>
 <input type="text" id="username" placeholder="שם משתמש">
 <input type="password" id="password" placeholder="סיסמה">
-<button onclick="auth()">התחבר / הרשם</button>
+<button onclick="auth()">כניסה מאובטחת</button>
 </div>
 
 <div id="main-screen" class="container hidden">
-<div style="color: var(--gold); font-weight: bold;" id="user-tag"></div>
+<div id="admin-alert" class="alert-bar hidden">הודעה מההנהלה: <span id="alert-text"></span></div>
+<div style="font-size: 14px; color: #aaa;" id="user-tag"></div>
+
+<div class="balance-box">
+<div style="font-size: 12px; color: #666; margin-bottom: 5px;">יתרת NUX נוכחית</div>
 <div class="balance" id="balance">0</div>
+</div>
 
 <div id="job-select">
-<h4>בחר עבודה להתחלת שכר:</h4>
-<button onclick="startJob('סוכן', 120)" style="background: #333; color: white; margin-bottom: 5px;">סוכן (120/דק')</button>
-<button onclick="startJob('מוציא לפועל', 100)" style="background: #333; color: white;">מוציא לפועל (100/דק')</button>
+<h4 style="margin-bottom: 10px;">בחר נתיב הכנסה:</h4>
+<button onclick="startJob('סוכן', 120)" style="background: #222; color: #fff;">🕵️ סוכן (120/דק')</button>
+<button onclick="startJob('מוציא לפועל', 100)" style="background: #222; color: #fff;">⚖️ מוציא לפועל (100/דק')</button>
 </div>
 
 <div id="active-work" class="hidden">
-<div style="color: #00ff41;">בתפקיד: <span id="job-title"></span></div>
+<span class="status-pill">פעיל בתפקיד <span id="job-title"></span></span>
 <div class="task-list">
-<strong style="font-size: 12px; color: #888;">משימות מהמנהל:</strong>
-<div id="tasks-container">מחכה למשימות...</div>
+<strong style="font-size: 13px; color: var(--gold);">📋 משימות מבצעיות:</strong>
+<div id="tasks-container" style="margin-top:10px; color: #ccc; font-size: 13px;">מחפש פקודות...</div>
 </div>
-<button onclick="resign()" style="background: #ff4444; color: white; margin-top: 15px;">התפטרות</button>
+<button onclick="resign()" style="background: #441111; color: #ff4444; margin-top: 20px; font-size: 12px;">סיום תפקיד והתפטרות</button>
 </div>
-
-<span class="logout-link" onclick="location.reload()">התנתק</span>
 </div>
 
 <script>
 let user = null;
-let db = JSON.parse(localStorage.getItem('nux_db')) || {};
+let db = JSON.parse(localStorage.getItem('nux_pro_db')) || {};
+const API = 'https://firebaseio.com';
 
 function auth() {
-const u = document.getElementById('username').value;
+const u = document.getElementById('username').value.trim();
 const p = document.getElementById('password').value;
 if(!u || !p) return;
 if(!db[u]) db[u] = { pass: p, balance: 0, job: null };
-if(db[u].pass !== p) return alert("טעות");
+if(db[u].pass !== p) return alert("סיסמה שגויה");
 user = u;
 showMain();
 }
@@ -66,9 +79,9 @@ showMain();
 function showMain() {
 document.getElementById('auth-screen').classList.add('hidden');
 document.getElementById('main-screen').classList.remove('hidden');
-document.getElementById('user-tag').innerText = `עובד: ${user}`;
+document.getElementById('user-tag').innerText = `מזהה עובד: ${user}`;
 updateUI();
-setInterval(syncTasks, 3000); // בדיקת משימות חדשות כל 3 שניות
+setInterval(syncWithAdmin, 2000);
 }
 
 function startJob(name, pay) {
@@ -98,18 +111,35 @@ document.getElementById('balance').innerText = Math.floor(db[user].balance).toLo
 }
 }, 1000);
 
-function save() { localStorage.setItem('nux_db', JSON.stringify(db)); }
+function save() { localStorage.setItem('nux_pro_db', JSON.stringify(db)); }
 function resign() { db[user].job = null; save(); updateUI(); }
 
-// פונקציית סינכרון משימות "באוויר" (מדמה שרת)
-async function syncTasks() {
+async function syncWithAdmin() {
 try {
-const res = await fetch('https://firebaseio.com');
+const res = await fetch(`${API}.json`);
 const data = await res.json();
-if(data) {
+
+// עדכון משימות
+if(data.tasks) {
 let html = '';
-for(let id in data) { html += `<div class="task-item">${data[id].text}</div>`; }
+for(let id in data.tasks) html += `<div class="task-item">${data.tasks[id].text}</div>`;
 document.getElementById('tasks-container').innerHTML = html;
+}
+
+// עדכון הודעת מערכת
+if(data.alert && data.alert.text) {
+document.getElementById('admin-alert').classList.remove('hidden');
+document.getElementById('alert-text').innerText = data.alert.text;
+} else {
+document.getElementById('admin-alert').classList.add('hidden');
+}
+
+// בדיקת בונוסים עבור המשתמש הנוכחי
+if(data.bonuses && data.bonuses[user]) {
+db[user].balance += data.bonuses[user];
+save();
+// מחיקת הבונוס אחרי שנאסף
+await fetch(`${API}bonuses/${user}.json`, { method: 'DELETE' });
 }
 } catch(e) {}
 }
