@@ -2,41 +2,22 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NUX SHOP</title>
-
 <style>
-body { background:#000; color:#fff; font-family:Arial; text-align:center; margin:0; padding:0; }
-h2 { margin-top:20px; color: gold; text-shadow: 0 0 10px #ffd700; }
-
-#items { display:flex; flex-wrap:wrap; justify-content:center; margin:20px; }
-
-.item {
-  border:1px solid #333;
-  padding:15px;
-  margin:10px;
-  border-radius:15px;
-  width:160px;
-  background:#161616;
-  text-align:center;
-  transition: 0.3s;
-}
-
-.item:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(255,215,0,0.5); }
-
-.item button {
-  padding:8px;
-  border:none;
-  border-radius:10px;
-  background:gold;
-  cursor:pointer;
-  width:80%;
-  margin-top:10px;
-  font-weight:bold;
-}
-
-.item button:hover { background:#ffea00; }
+:root { --gold:#ffd700; --dark:#0a0a0a; --card:#161616; --accent:#00ff41; --text:#fff; }
+body { background:#000; color:#fff; font-family:'Segoe UI', Tahoma, sans-serif; margin:0; padding:20px; text-align:center; }
+h2 { color: var(--gold); margin-bottom:20px; }
+#items { display:flex; flex-wrap:wrap; justify-content:center; }
+.item { background:var(--card); border:1px solid #333; border-radius:15px; padding:15px; margin:10px; width:180px; transition:0.3s; cursor:pointer; position:relative; overflow:hidden; }
+.item:hover { transform:translateY(-5px); box-shadow:0 10px 20px rgba(255,215,0,0.3); }
+.item h3 { font-size:16px; margin-bottom:5px; }
+.item p { font-size:14px; margin:3px 0; }
+button { padding:8px 12px; border:none; border-radius:10px; background:var(--gold); color:#000; font-weight:bold; cursor:pointer; transition:0.3s; }
+button:hover { transform:translateY(-2px); box-shadow:0 5px 15px rgba(255,215,0,0.4); }
+@keyframes coin-drop { 0% { transform:translateY(-20px); opacity:0; } 50% { opacity:1; } 100% { transform:translateY(0px); opacity:1; } }
+.coin-effect { position:absolute; top:-20px; right:10px; font-size:20px; color:var(--gold); animation: coin-drop 0.5s ease forwards; }
 </style>
-
 </head>
 <body>
 
@@ -45,55 +26,59 @@ h2 { margin-top:20px; color: gold; text-shadow: 0 0 10px #ffd700; }
 
 <script>
 const API = "https://nuxcoin-e0d41-default-rtdb.firebaseio.com/";
-const itemsContainer = document.getElementById("items");
+let userBalance = parseInt(localStorage.getItem('nux_user_balance')) || 0;
 
-// קנייה ושידור ל-index
+// --- קנייה ---
 function buy(item){
-    const confirmBuy = confirm(`לקנות את ${item.name} במחיר ${item.price}?`);
-    if(!confirmBuy) return;
+    if(userBalance < item.price) return alert("אין לך מספיק NUX");
+    userBalance -= item.price;
+    localStorage.setItem('nux_user_balance', userBalance);
 
-    window.opener.postMessage({
-        type:"BUY",
-        item:item
-    }, "*");
+    // אפקט מטבע
+    const coin = document.createElement('div');
+    coin.className='coin-effect';
+    coin.innerText='💰';
+    document.body.appendChild(coin);
+    setTimeout(()=>coin.remove(),600);
 
-    alert(`${item.name} נשלח למערכת הראשית`);
-}
-
-// טעינת פריטים דינמית מ-Firebase
-async function render(){
-    try {
-        let res = await fetch(API + "shopItems.json");
-        let data = await res.json();
-
-        itemsContainer.innerHTML = "";
-
-        if(!data){
-            itemsContainer.innerHTML = "<p>אין כרגע פריטים בחנות</p>";
-            return;
-        }
-
-        for(let id in data){
-            let item = data[id];
-            itemsContainer.innerHTML += `
-            <div class="item">
-                <strong>${item.name}</strong><br>
-                <small>סוג: ${item.type}</small><br>
-                <strong>מחיר: ${item.price}</strong><br>
-                <button onclick='buy(${JSON.stringify(item)})'>קנה</button>
-            </div>
-            `;
-        }
-
-    } catch(e){
-        console.error("שגיאה בטעינת החנות:", e);
-        itemsContainer.innerHTML = "<p>שגיאה בטעינת החנות</p>";
+    alert(`קנית את ${item.name} ב-${item.price} NUX!\nיתרה: ${userBalance}`);
+    
+    // שליחת הקנייה חזרה ל-index
+    if(window.opener){
+        window.opener.postMessage({type:'BUY', item:item}, '*');
     }
 }
 
-// רענון אוטומטי כל 10 שניות
+// --- טעינת פריטים ---
+async function render(){
+    const itemsDiv = document.getElementById('items');
+    itemsDiv.innerHTML="טוען...";
+    try{
+        const res = await fetch(`${API}shopItems.json`);
+        const data = await res.json() || {};
+        itemsDiv.innerHTML="";
+        for(let id in data){
+            const item = data[id];
+            const div = document.createElement('div');
+            div.className='item';
+            div.innerHTML=`
+                <h3>${item.name}</h3>
+                <p>💰 מחיר: ${item.price}</p>
+                <p>🔹 סוג: ${item.type}</p>
+                <button onclick='buy(${JSON.stringify(item)})'>קנה</button>
+            `;
+            itemsDiv.appendChild(div);
+        }
+        if(Object.keys(data).length===0) itemsDiv.innerHTML="אין פריטים כרגע";
+    }catch(e){
+        itemsDiv.innerHTML="שגיאה בטעינת פריטים";
+    }
+}
+
+// INIT
 render();
-setInterval(render, 10000);
+
+// אפשר להוסיף חידוש אנימציות נוספים בעתיד
 </script>
 
 </body>
