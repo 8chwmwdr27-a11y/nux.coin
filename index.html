@@ -2,148 +2,221 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NUX Work Terminal Pro</title>
+<title>NUX ULTIMATE SYSTEM</title>
 <style>
-:root { --gold: #ffd700; --dark: #0a0a0a; --card: #161616; --text: #f0f0f0; }
-body { background-color: var(--dark); color: var(--text); font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; overflow-x: hidden; }
-.container { background: var(--card); padding: 35px; border-radius: 25px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.8); width: 360px; text-align: center; position: relative; }
-.container::after { content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border-radius: 27px; background: linear-gradient(45deg, transparent, var(--gold), transparent); z-index: -1; opacity: 0.3; }
-
-input { width: 90%; padding: 14px; margin: 10px 0; border-radius: 12px; border: 1px solid #333; background: #000; color: #fff; text-align: center; outline: none; }
-button { width: 100%; padding: 14px; margin-top: 15px; background: var(--gold); border: none; border-radius: 12px; font-weight: bold; cursor: pointer; color: #000; transition: 0.3s; }
-button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4); }
-.hidden { display: none !important; }
-
-.balance-box { background: #000; padding: 20px; border-radius: 15px; margin: 20px 0; border: 1px solid #222; }
-.balance { font-size: 45px; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px rgba(255,215,0,0.5); }
-
-.alert-bar { background: var(--gold); color: #000; padding: 8px; font-size: 13px; font-weight: bold; border-radius: 8px; margin-bottom: 15px; animation: pulse 2s infinite; }
-@keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
-
-.task-list { background: #0e0e0e; padding: 15px; border-radius: 15px; text-align: right; margin-top: 25px; border: 1px solid #333; }
-.task-item { border-bottom: 1px solid #222; padding: 12px 5px; font-size: 14px; display: flex; justify-content: space-between; }
-.status-pill { background: #00ff41; color: #000; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+body { background:#0a0a0a; color:#fff; font-family:Arial; text-align:center; }
+.container { background:#161616; padding:20px; border-radius:20px; width:360px; margin:auto; }
+button { padding:10px; margin:5px; border:none; border-radius:10px; cursor:pointer; background:gold; }
+.hidden{display:none;}
+.tab{margin-top:15px;}
+.pet,.bot{border:1px solid #333; padding:5px; margin:5px; border-radius:10px;}
 </style>
 </head>
+
 <body>
 
-<div id="auth-screen" class="container">
-<h2 style="color: var(--gold);">NUX Terminal</h2>
-<p style="font-size: 13px; color: #888;">התחבר למערכת הכרייה המרכזית</p>
-<input type="text" id="username" placeholder="שם משתמש">
-<input type="password" id="password" placeholder="סיסמה">
-<button onclick="auth()">כניסה מאובטחת</button>
+<div id="login" class="container">
+<h2>NUX LOGIN</h2>
+<input id="user" placeholder="שם משתמש"><br>
+<input id="pass" type="password" placeholder="סיסמה"><br>
+<button onclick="login()">כניסה</button>
 </div>
 
-<div id="main-screen" class="container hidden">
-<div id="admin-alert" class="alert-bar hidden">הודעה מההנהלה: <span id="alert-text"></span></div>
-<div style="font-size: 14px; color: #aaa;" id="user-tag"></div>
+<div id="app" class="container hidden">
 
-<div class="balance-box">
-<div style="font-size: 12px; color: #666; margin-bottom: 5px;">יתרת NUX נוכחית</div>
-<div class="balance" id="balance">0</div>
+<div id="alert"></div>
+<h3 id="profile"></h3>
+
+<div>
+<button onclick="tab('home')">🏠</button>
+<button onclick="tab('profileTab')">👤</button>
+<button onclick="tab('shop')">🛒</button>
+<button onclick="tab('bank')">🏦</button>
+<button onclick="tab('pets')">🐾</button>
+<button onclick="tab('bots')">🤖</button>
 </div>
 
-<div id="job-select">
-<h4 style="margin-bottom: 10px;">בחר נתיב הכנסה:</h4>
-<button onclick="startJob('סוכן', 120)" style="background: #222; color: #fff;">🕵️ סוכן (120/דק')</button>
-<button onclick="startJob('מוציא לפועל', 100)" style="background: #222; color: #fff;">⚖️ מוציא לפועל (100/דק')</button>
-</div>
+<div id="home" class="tab"></div>
+<div id="profileTab" class="tab hidden"></div>
+<div id="shop" class="tab hidden"></div>
+<div id="bank" class="tab hidden"></div>
+<div id="pets" class="tab hidden"></div>
+<div id="bots" class="tab hidden"></div>
 
-<div id="active-work" class="hidden">
-<span class="status-pill">פעיל בתפקיד <span id="job-title"></span></span>
-<div class="task-list">
-<strong style="font-size: 13px; color: var(--gold);">📋 משימות מבצעיות:</strong>
-<div id="tasks-container" style="margin-top:10px; color: #ccc; font-size: 13px;">מחפש פקודות...</div>
-</div>
-<button onclick="resign()" style="background: #441111; color: #ff4444; margin-top: 20px; font-size: 12px;">סיום תפקיד והתפטרות</button>
-</div>
 </div>
 
 <script>
-let user = null;
-let db = JSON.parse(localStorage.getItem('nux_pro_db')) || {};
+
+// 🔥 FIREBASE שלך
 const API = "https://nuxcoin-e0d41-default-rtdb.firebaseio.com/";
 
-function auth() {
-const u = document.getElementById('username').value.trim();
-const p = document.getElementById('password').value;
-if(!u || !p) return;
-if(!db[u]) db[u] = { pass: p, balance: 0, job: null };
-if(db[u].pass !== p) return alert("סיסמה שגויה");
-user = u;
-showMain();
+// DB
+let db = JSON.parse(localStorage.getItem("NUX_DB")) || {};
+let user = null;
+
+// LOGIN
+function login(){
+let u=userInput(), p=passInput();
+if(!db[u]) db[u]={pass:p,balance:1000,xp:0,level:1,job:null,bank:0,pets:[],bots:[],up:{salary:1,speed:1}};
+if(db[u].pass!==p) return alert("שגוי");
+user=u;
+loginDiv().classList.add("hidden");
+appDiv().classList.remove("hidden");
+init();
 }
 
-function showMain() {
-document.getElementById('auth-screen').classList.add('hidden');
-document.getElementById('main-screen').classList.remove('hidden');
-document.getElementById('user-tag').innerText = `מזהה עובד: ${user}`;
-updateUI();
-setInterval(syncWithAdmin, 2000);
+// HELPERS
+const userInput=()=>document.getElementById("user").value;
+const passInput=()=>document.getElementById("pass").value;
+const loginDiv=()=>document.getElementById("login");
+const appDiv=()=>document.getElementById("app");
+const me=()=>db[user];
+
+// INIT
+function init(){
+renderAll();
+setInterval(loop,1000);
+setInterval(sync,3000);
 }
 
-function startJob(name, pay) {
-db[user].job = { name, pay };
+// TABS
+function tab(id){
+document.querySelectorAll(".tab").forEach(t=>t.classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
+}
+
+// PROFILE
+function renderProfile(){
+let u=me();
+profile.innerHTML=`${user} | LVL ${u.level} | 💰 ${Math.floor(u.balance)}`;
+}
+
+// HOME
+function renderHome(){
+let u=me();
+home.innerHTML=`
+<h3>🏠 בית</h3>
+💰 ${Math.floor(u.balance)}<br>
+🏦 בבנק: ${Math.floor(u.bank)}<br>
+🤖 בוטים: ${u.bots.length}<br>
+🐾 חיות: ${u.pets.length}<br>
+
+<button onclick="startJob()">💼 עבודה</button>
+`;
+}
+
+// JOB
+function startJob(){
+me().job={pay:100};
+}
+
+// LOOP
+function loop(){
+if(!user) return;
+let u=me();
+
+if(u.job){
+u.balance += (u.job.pay/60)*u.up.salary*u.up.speed;
+}
+
+u.bots.forEach(b=>u.balance+=b);
+
+u.xp++;
+if(u.xp>=100){u.level++;u.xp=0;}
+
 save();
-updateUI();
+renderProfile();
 }
 
-function updateUI() {
-const data = db[user];
-document.getElementById('balance').innerText = Math.floor(data.balance).toLocaleString();
-if(data.job) {
-document.getElementById('job-select').classList.add('hidden');
-document.getElementById('active-work').classList.remove('hidden');
-document.getElementById('job-title').innerText = data.job.name;
-} else {
-document.getElementById('job-select').classList.remove('hidden');
-document.getElementById('active-work').classList.add('hidden');
-}
+// SHOP
+function renderShop(){
+shop.innerHTML=`
+<h3>🛒 חנות</h3>
+
+<button onclick="buySalary()">שדרוג שכר (500)</button>
+<button onclick="buySpeed()">שדרוג מהירות (400)</button>
+<button onclick="buyBot()">קנה בוט (800)</button>
+<button onclick="buyPet()">קנה חיה (600)</button>
+`;
 }
 
-setInterval(() => {
-if(user && db[user].job) {
-db[user].balance += (db[user].job.pay / 60);
-save();
-document.getElementById('balance').innerText = Math.floor(db[user].balance).toLocaleString();
-}
-}, 1000);
+function buySalary(){buy(500,()=>me().up.salary*=1.5);}
+function buySpeed(){buy(400,()=>me().up.speed*=1.3);}
+function buyBot(){buy(800,()=>me().bots.push(5));}
+function buyPet(){buy(600,()=>me().pets.push({lvl:1}))}
 
-function save() { localStorage.setItem('nux_pro_db', JSON.stringify(db)); }
-function resign() { db[user].job = null; save(); updateUI(); }
-
-async function syncWithAdmin() {
-try {
-const res = await fetch(`${API}.json`);
-const data = await res.json();
-
-// עדכון משימות
-if(data.tasks) {
-let html = '';
-for(let id in data.tasks) html += `<div class="task-item">${data.tasks[id].text}</div>`;
-document.getElementById('tasks-container').innerHTML = html;
+function buy(cost,fn){
+let u=me();
+if(u.balance>=cost){u.balance-=cost;fn();save();renderAll();}
 }
 
-// עדכון הודעת מערכת
-if(data.alert && data.alert.text) {
-document.getElementById('admin-alert').classList.remove('hidden');
-document.getElementById('alert-text').innerText = data.alert.text;
-} else {
-document.getElementById('admin-alert').classList.add('hidden');
+// BANK
+function renderBank(){
+let u=me();
+bank.innerHTML=`
+<h3>🏦 בנק</h3>
+💰 מזומן: ${Math.floor(u.balance)}<br>
+🏦 בנק: ${Math.floor(u.bank)}<br>
+
+<button onclick="deposit()">הפקד 100</button>
+<button onclick="withdraw()">משוך 100</button>
+`;
+}
+function deposit(){if(me().balance>=100){me().balance-=100;me().bank+=100;}}
+function withdraw(){if(me().bank>=100){me().bank-=100;me().balance+=100;}}
+
+// PETS
+function renderPets(){
+let u=me();
+pets.innerHTML="<h3>🐾 חיות</h3>";
+u.pets.forEach((p,i)=>{
+pets.innerHTML+=`<div class='pet'>חיה LVL ${p.lvl} <button onclick="feed(${i})">האכל</button></div>`;
+});
+}
+function feed(i){me().pets[i].lvl++;}
+
+// BOTS
+function renderBots(){
+let u=me();
+bots.innerHTML="<h3>🤖 בוטים</h3>";
+u.bots.forEach((b,i)=>{
+bots.innerHTML+=`<div class='bot'>בוט +${b}/שנייה</div>`;
+});
 }
 
-// בדיקת בונוסים עבור המשתמש הנוכחי
-if(data.bonuses && data.bonuses[user]) {
-db[user].balance += data.bonuses[user];
-save();
-// מחיקת הבונוס אחרי שנאסף
-await fetch(`${API}bonuses/${user}.json`, { method: 'DELETE' });
+// ADMIN SYNC
+async function sync(){
+try{
+let res=await fetch(API+".json");
+let data=await res.json();
+
+if(data.alert){
+alertDiv().innerText=data.alert.text;
 }
-} catch(e) {}
+
+if(data.bonus && data.bonus[user]){
+me().balance+=data.bonus[user];
+await fetch(API+"bonus/"+user+".json",{method:"DELETE"});
 }
+}catch(e){}
+}
+
+// ALERT
+function alertDiv(){return document.getElementById("alert");}
+
+// SAVE
+function save(){localStorage.setItem("NUX_DB",JSON.stringify(db));}
+
+// RENDER
+function renderAll(){
+renderProfile();
+renderHome();
+renderShop();
+renderBank();
+renderPets();
+renderBots();
+}
+
 </script>
 </body>
 </html>
-
