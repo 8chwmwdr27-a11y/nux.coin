@@ -1,0 +1,2 @@
+# nux.coin
+pablik coin
